@@ -14,6 +14,32 @@
 
 </div>
 
+##  Screenshots
+
+### Landing Page
+![FinSageAi Landing Page](images/LandingPage.png)
+
+
+
+
+## ?? Screenshots
+
+### Landing Page
+![FinSageAi Landing Page](images/LandingPage.png)
+
+### Portfolio Analysis Examples
+
+**Comprehensive Portfolio Overview**
+![Portfolio Analysis 1](images/Analysis%201.png)
+
+**Sector Allocation & Risk Assessment**
+![Portfolio Analysis 2](images/Analysis%202.png)
+
+**Top Performers & Recommendations**
+![Portfolio Analysis 3](images/Analysis%203.png)
+
+**Detailed Stock Analysis with Charts**
+![Portfolio Analysis 4](images/Analysis%204.png)
 ---
 
 ## 📋 Overview
