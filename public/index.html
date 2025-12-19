@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FinSageAi Assistant</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1>FinSageAi Assistant</h1>
+    <p class="tagline">Your AI-Powered Financial Advisor | Smart Insights for Smarter Investments</p>
+  </header>
+
+  <main>
+    <div id="chat" aria-live="polite" aria-label="Chat messages"></div>
+  </main>
+
+  <div id="controls">
+    <div class="row">
+      <label for="modelSelect">Model:</label>
+      <select id="modelSelect">
+        <option value="gpt-oss:20b">gpt-oss:20b</option>
+        <option value="qwen2.5:14b">qwen2.5:14b</option>
+        <option value="deepseek-r1:14b">deepseek-r1:14b</option>
+        <option value="llama3.1:8b">llama3.1:8b</option>
+      </select>
+
+      <button id="kiteLoginBtn" title="Login to Zerodha Kite">🔐 Kite Login</button>
+      <button id="portfolioBtn" title="Analyze your holdings">Analyze Portfolio</button>
+      <button id="tradeBtn" title="Place a trade order">Place Trade</button>
+    </div>
+
+    <div class="row">
+      <input id="userInput" placeholder="Ask me something..." />
+      <button id="sendBtn">Send</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
