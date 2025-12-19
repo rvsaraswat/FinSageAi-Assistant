@@ -14,6 +14,54 @@
 
 </div>
 
+
+## 🎯 Overview
+
+FinSageAi Assistant combines the power of local large language models (via Ollama) with real-time trading capabilities through Zerodha's Kite Connect API. Get AI-powered portfolio analysis, market insights, and seamless trade execution—all while keeping your data local and secure.
+
+### Why FinSageAi?
+
+- 🔒 **Fully Local:** No data sent to external AI services—your portfolio stays private
+- 🧠 **Smart Analysis:** AI-powered portfolio insights, sector analysis, and risk assessment
+- 📊 **Visual Charts:** Auto-generated portfolio allocation and performance charts
+- 🛡️ **Safe Trading:** Human-in-the-loop confirmation for all trades
+- ⚡ **Easy Setup:** Get running in under 10 minutes
+
+---
+
+## ✨ Features
+
+### 💬 AI Chat Interface
+- Select from multiple Ollama models (llama3.1:8b, qwen2.5:14b, gpt-oss:20b)
+- Natural language queries about your portfolio
+- Context-aware financial advice
+
+### 📊 Portfolio Analysis
+- **Real-time data** from your Zerodha account
+- **Automated insights:**
+  - Sector allocation and diversification
+  - Top performers and underperformers
+  - Risk assessment and concentration analysis
+  - Actionable buy/sell/hold recommendations
+- **Visual dashboards:**
+  - Portfolio allocation pie charts
+  - P&L bar charts by stock
+  - Sector distribution doughnut charts
+
+### 📈 Trade Execution
+- Natural language order placement: *"Buy 10 shares of INFY at market price"*
+- AI extracts order details into structured format
+- **Safety first:** Manual confirmation required before execution
+- Support for market and limit orders
+- CNC, MIS, and NRML product types
+
+### 🔐 Authentication
+- Secure OAuth2 flow with Zerodha
+- Daily token refresh handling
+- Session management
+
+---
+
 ## Screenshots
 
 ### Landing Page
@@ -35,60 +83,12 @@
 
 ---
 
-
-## ­ƒôï Overview
-
-FinSageAi Assistant combines the power of local large language models (via Ollama) with real-time trading capabilities through Zerodha's Kite Connect API. Get AI-powered portfolio analysis, market insights, and seamless trade executionÔÇöall while keeping your data local and secure.
-
-### Why FinSageAi?
-
-- ­ƒÅá **Fully Local:** No data sent to external AI servicesÔÇöyour portfolio stays private
-- ­ƒºá **Smart Analysis:** AI-powered portfolio insights, sector analysis, and risk assessment
-- ­ƒôè **Visual Charts:** Auto-generated portfolio allocation and performance charts
-- ­ƒöÆ **Safe Trading:** Human-in-the-loop confirmation for all trades
-- ­ƒÜÇ **Easy Setup:** Get running in under 10 minutes
-
----
-
-## Ô£¿ Features
-
-### ­ƒÆ¼ AI Chat Interface
-- Select from multiple Ollama models (llama3.1:8b, qwen2.5:14b, gpt-oss:20b)
-- Natural language queries about your portfolio
-- Context-aware financial advice
-
-### ­ƒôè Portfolio Analysis
-- **Real-time data** from your Zerodha account
-- **Automated insights:**
-  - Sector allocation and diversification
-  - Top performers and underperformers
-  - Risk assessment and concentration analysis
-  - Actionable buy/sell/hold recommendations
-- **Visual dashboards:**
-  - Portfolio allocation pie charts
-  - P&L bar charts by stock
-  - Sector distribution doughnut charts
-
-### ­ƒôê Trade Execution
-- Natural language order placement: *"Buy 10 shares of INFY at market price"*
-- AI extracts order details into structured format
-- **Safety first:** Manual confirmation required before execution
-- Support for market and limit orders
-- CNC, MIS, and NRML product types
-
-### ­ƒöÉ Authentication
-- Secure OAuth2 flow with Zerodha
-- Daily token refresh handling
-- Session management
-
----
-
-## ­ƒÜÇ Quick Start
+## ⚡ Quick Start
 
 ### Prerequisites
 - **Node.js v18+** ([Download](https://nodejs.org/))
 - **Ollama** ([Download](https://ollama.ai/))
-- **Zerodha Trading Account** with [Kite Connect API](https://developers.kite.trade/) (Ôé╣2,000/month)
+- **Zerodha Trading Account** with [Kite Connect API](https://developers.kite.trade/) (₹2,000/month)
 
 ### Installation (5 minutes)
 
@@ -119,15 +119,15 @@ npm start
 
 ### First Use
 1. Open http://localhost:15600 in your browser
-2. Click **­ƒöÉ Kite Login** to authenticate with Zerodha
+2. Click **🔐 Kite Login** to authenticate with Zerodha
 3. Select an Ollama model from the dropdown
-4. Click **­ƒôè Analyze Portfolio** to see your AI-powered analysis
+4. Click **📊 Analyze Portfolio** to see your AI-powered analysis
 
-**­ƒôû Detailed setup instructions:** See [INSTALLATION.md](INSTALLATION.md)
+**📚 Detailed setup instructions:** See [INSTALLATION.md](INSTALLATION.md)
 
 ---
 
-## ­ƒÄ» Usage Examples
+## 💡 Usage Examples
 
 ### Example 1: Portfolio Analysis
 ```
@@ -135,19 +135,19 @@ You: Analyze my portfolio
 
 AI: Fetching your portfolio data...
     
-    ­ƒôè Portfolio Summary:
-    - Total Value: Ôé╣4,85,234
-    - Total P&L: +Ôé╣45,123 (10.2%)
+    📊 Portfolio Summary:
+    - Total Value: ₹4,85,234
+    - Total P&L: +₹45,123 (10.2%)
     - Holdings: 12 stocks
     
-    ­ƒÄ» Top Performers:
+    💡 Top Performers:
     1. INFY: +25.3%
     2. TCS: +18.7%
     
-    ÔÜá´©Å Underperformers:
+    ⚠️ Underperformers:
     1. HDFC: -8.2%
     
-    ­ƒÆí Recommendations:
+    💰 Recommendations:
     - Consider reducing IT sector exposure (45%)
     - Diversify into FMCG and Pharma
     - Book partial profits in INFY
@@ -172,23 +172,23 @@ AI: Preparing your order...
     }
     ```
     
-    ­ƒôï Order Ready for Confirmation:
+    📋 Order Ready for Confirmation:
     - Stock: ITCHOTELS
     - Type: SELL
     - Quantity: 5 shares
     - Order Type: MARKET
     
-    ÔÜá´©Å Type "CONFIRM" to execute or "CANCEL" to abort.
+    ⚠️ Type "CONFIRM" to execute or "CANCEL" to abort.
 
 You: CONFIRM
 
-AI: Ô£à Order Placed Successfully!
+AI: ✅ Order Placed Successfully!
     Order ID: 240123000123456
 ```
 
 ---
 
-## ­ƒôÜ Documentation
+## 📚 Documentation
 
 | Document | Description |
 |----------|-------------|
@@ -201,18 +201,18 @@ AI: Ô£à Order Placed Successfully!
 
 ---
 
-## ­ƒÅù´©Å Architecture
+## 🏗️ Architecture
 
 ```
-ÔöîÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÉ      ÔöîÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÉ      ÔöîÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÉ
-Ôöé   Browser   ÔöéÔöÇÔöÇÔöÇÔöÇÔöÇÔûÂÔöé  Express API ÔöéÔöÇÔöÇÔöÇÔöÇÔöÇÔûÂÔöé   Ollama    Ôöé
-Ôöé   (Port UI) Ôöé      Ôöé  (Port 15600)Ôöé      Ôöé  (Port 11434Ôöé
-ÔööÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÿ      ÔööÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÿ      ÔööÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÿ
-                            Ôöé
-                            Ôö£ÔöÇÔöÇÔöÇÔöÇÔöÇÔûÂ Kite Connect API
-                            Ôöé       (api.kite.trade)
-                            Ôöé
-                            ÔööÔöÇÔöÇÔöÇÔöÇÔöÇÔûÂ MCP Remote (optional)
+┌─────────────┐      ┌──────────────┐        ┌─────────────┐
+│   Browser   │──────▶│  Express API│──────▶│   Ollama    │
+│   (Port UI) │      │  (Port 15600)│        │  (Port 11434│
+└─────────────┘      └──────────────┘        └─────────────┘
+                            │
+                            ├──────▶ Kite Connect API
+                            │       (api.kite.trade)
+                            │
+                            └──────▶ MCP Remote (optional)
                                     (mcp.kite.trade)
 ```
 
@@ -224,7 +224,7 @@ AI: Ô£à Order Placed Successfully!
 
 ---
 
-## ­ƒøá´©Å API Endpoints
+## 🔌 API Endpoints
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
