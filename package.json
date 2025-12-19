@@ -25,12 +25,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/YOUR_USERNAME/FinSageAi-Assistant.git"
+    "url": "https://github.com/rvsaraswat/FinSageAi-Assistant.git"
   },
   "bugs": {
-    "url": "https://github.com/YOUR_USERNAME/FinSageAi-Assistant/issues"
+    "url": "https://github.com/rvsaraswat/FinSageAi-Assistant/issues"
   },
-  "homepage": "https://github.com/YOUR_USERNAME/FinSageAi-Assistant#readme",
+  "homepage": "https://github.com/rvsaraswat/FinSageAi-Assistant#readme",
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=8.0.0"
