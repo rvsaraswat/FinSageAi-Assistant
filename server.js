@@ -437,7 +437,8 @@ app.get('/api/models', async (req, res) => {
       })
       .map(m => ({
         name: m.name,
-        size: m.size || 0   // size in bytes from Ollama
+        size: m.size || 0,           // file size on disk in bytes
+        paramSize: m.details?.parameter_size || '' // e.g. "14B", "7B"
       }));
     res.json({ models });
   } catch (err) {

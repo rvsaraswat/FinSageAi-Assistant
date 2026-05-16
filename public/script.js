@@ -159,25 +159,44 @@ function getEffectiveSystemPrompt() {
 loadSettings();
 
 // Dynamically load available Ollama models
-function formatSize(bytes) {
+function formatDiskSize(bytes) {
   if (!bytes) return '';
   const gb = bytes / 1_073_741_824;
   return gb >= 1 ? `${gb.toFixed(1)} GB` : `${(bytes / 1_048_576).toFixed(0)} MB`;
 }
 
-function modelTier(bytes) {
-  const gb = bytes / 1_073_741_824;
-  if (gb < 2)  return 'small';
-  if (gb < 8)  return 'medium';
-  if (gb < 14) return 'large';
+// Parse parameter_size string like "14B", "1.5B", "70B" → number of billions
+function parseParamBillions(paramSize) {
+  if (!paramSize) return null;
+  const m = paramSize.match(/^(\d+(?:\.\d+)?)[Bb]/)
+  return m ? parseFloat(m[1]) : null;
+}
+
+// Tier by parameter count (best proxy for RAM requirements)
+function modelTier(paramSize, diskBytes) {
+  const p = parseParamBillions(paramSize);
+  if (p !== null) {
+    if (p <= 2)  return 'tiny';
+    if (p <= 7)  return 'small';
+    if (p <= 14) return 'medium';
+    if (p <= 32) return 'large';
+    return 'xlarge';
+  }
+  // Fallback to disk size if param_size unavailable
+  const gb = (diskBytes || 0) / 1_073_741_824;
+  if (gb < 1.5) return 'tiny';
+  if (gb < 5)   return 'small';
+  if (gb < 10)  return 'medium';
+  if (gb < 20)  return 'large';
   return 'xlarge';
 }
 
 const TIER_META = {
-  small:  { label: '🟢 Small  ·  runs on 8 GB RAM',   order: 0 },
-  medium: { label: '🟡 Medium  ·  needs 12–16 GB RAM', order: 1 },
-  large:  { label: '🟠 Large  ·  needs 16–24 GB RAM',  order: 2 },
-  xlarge: { label: '🔴 X-Large  ·  needs 24 GB+ RAM',  order: 3 },
+  tiny:   { label: '⚪ Tiny  ·  ≤2B params  ·  ~4 GB RAM',     order: 0 },
+  small:  { label: '🟢 Small  ·  3–7B params  ·  ~8–12 GB RAM',  order: 1 },
+  medium: { label: '🟡 Medium  ·  8–14B params  ·  ~16–24 GB RAM', order: 2 },
+  large:  { label: '🟠 Large  ·  15–32B params  ·  ~24–48 GB RAM', order: 3 },
+  xlarge: { label: '🔴 X-Large  ·  33B+ params  ·  48 GB+ RAM',   order: 4 },
 };
 
 async function loadModels() {
@@ -189,7 +208,7 @@ async function loadModels() {
     // Group by tier
     const groups = {};
     for (const m of models) {
-      const tier = modelTier(m.size);
+      const tier = modelTier(m.paramSize, m.size);
       if (!groups[tier]) groups[tier] = [];
       groups[tier].push(m);
     }
@@ -199,7 +218,11 @@ async function loadModels() {
       .sort((a, b) => TIER_META[a[0]].order - TIER_META[b[0]].order)
       .map(([tier, list]) => {
         const options = list
-          .map(m => `<option value="${m.name}">${m.name}${m.size ? '  ·  ' + formatSize(m.size) : ''}</option>`)
+          .map(m => {
+            const disk = m.size ? formatDiskSize(m.size) + ' disk' : '';
+            const label = [m.name, disk].filter(Boolean).join('  ·  ');
+            return `<option value="${m.name}">${label}</option>`;
+          })
           .join('');
         return `<optgroup label="${TIER_META[tier].label}">${options}</optgroup>`;
       })
