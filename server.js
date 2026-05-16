@@ -426,10 +426,19 @@ app.get('/api/models', async (req, res) => {
     const response = await fetch(`${OLLAMA_BASE}/api/tags`);
     if (!response.ok) throw new Error(`Ollama responded with ${response.status}`);
     const data = await response.json();
-    const models = (data.models || []).map(m => ({
-      name: m.name,
-      size: m.size || 0   // size in bytes from Ollama
-    }));
+    // Exclude embedding-only models — they don't support chat
+    const EMBED_FAMILIES = new Set(['bert', 'nomic-bert']);
+    const models = (data.models || [])
+      .filter(m => {
+        const families = m.details?.families || [];
+        const hasEmbedFamily = families.some(f => EMBED_FAMILIES.has(f.toLowerCase()));
+        const hasEmbedName = /embed/i.test(m.name);
+        return !hasEmbedFamily && !hasEmbedName;
+      })
+      .map(m => ({
+        name: m.name,
+        size: m.size || 0   // size in bytes from Ollama
+      }));
     res.json({ models });
   } catch (err) {
     res.status(500).json({ error: err.message });
