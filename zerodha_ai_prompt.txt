@@ -1,0 +1,84 @@
+# ZeroAI Assistant – Full Project Generation
+
+## Goal
+Build a local web app that lets you chat with an Ollama model (any of the ones you have) and run “agents” that call Zerodha’s Kite MCP server.  
+
+The app will consist of:
+
+* **package.json** – minimal Node.js project with dependencies: express, node‑fetch, cors
+* **server.js** – Express server exposing two POST endpoints (`/api/llm` & `/api/mcp`) and the logic to call Ollama (`http://localhost:11434/api/chat`) and the local MCP server (`http://localhost:5000/...`).  
+* **public/** folder with:
+  * **index.html** – a chat UI, model‑selector dropdown, agent buttons (Analyze Portfolio, Place Trade), and an input field.  
+  * **script.js** – front‑end logic: keep selected model, send chat messages, invoke agents, display responses.  
+  * **style.css** – simple styling for chat bubbles, header, controls.  
+* **README.md** – quick run‑instructions.
+
+## Instructions for Copilot
+1. Create `package.json` with the following fields:  
+   - name: `zerodha-ai-assistant`  
+   - version: `1.0.0`  
+   - main: `server.js`  
+   - scripts: `start: "node server.js"`  
+   - dependencies: express, node-fetch, cors  
+   - add a `postinstall` script that prints “✅ ZeroAI Assistant ready!”  
+
+2. Generate `server.js` that:  
+   - imports express, cors, node-fetch, sets up middleware.  
+   - defines `async function chatWithOllama(model, prompt)` that POSTs to the Ollama API, streams the response, and returns the final text.  
+   - defines `async function callMCP(action, params)` that POSTs to `http://localhost:5000/${action}` and returns the JSON.  
+   - creates `/api/llm` endpoint that receives `{model, prompt}` and returns `{reply}`.  
+   - creates `/api/mcp` endpoint that receives `{action, params}` and returns `{reply}`.  
+   - starts listening on port 3000 and logs “🚀 API server running on 3000”.  
+   - adds error handling: try/catch, responds with `status 500` and `{error: message}`.  
+   - includes inline comments explaining each step.  
+
+3. Inside the `public/` folder, generate **index.html**:  
+   - Include a `<header>` with the title “ZeroAI Assistant”.  
+   - A `<div id="chat">` for chat bubbles.  
+   - A `<div id="controls">` containing:  
+     * `<select id="modelSelect">` with options for `gpt-oss:20b`, `qwen2.5:14b`, `deepseek-r1:14b`, `llama3.1:8b`.  
+     * Two `<button>`s: `id="portfolioBtn"` (text: “Analyze Portfolio”) and `id="tradeBtn"` (“Place Trade”).  
+     * `<input id="userInput" placeholder="Ask me something...">` and `<button id="sendBtn">Send</button>`.  
+   - Link to **style.css** and **script.js**.  
+   - Add minimal meta tags and UTF‑8 charset.  
+
+4. Generate **script.js**:  
+   - Grab DOM elements (`chat`, `userInput`, `sendBtn`, `modelSelect`, `portfolioBtn`, `tradeBtn`).  
+   - Track `currentModel` from the dropdown.  
+   - `addMessage(sender, text)` helper to append chat bubbles (`className = sender`).  
+   - `async function callLLM(prompt)` that POSTs to `/api/llm` with `{model: currentModel, prompt}` and returns `reply`.  
+   - `async function analyzePortfolio()` that:  
+     * sends “Analyze my holdings” to `/api/llm` with a system prompt like “You are a portfolio analyst.”  
+     * or directly calls `/api/mcp` with action `portfolio_summary` (you can decide which; show both options as comments).  
+   - `async function placeTrade(symbol, qty)` that POSTs to `/api/mcp` with `{action:'place_order', params:{symbol,quantity:qty}}` and shows the result.  
+   - Attach `click` listeners:  
+     * `sendBtn` → send user text via `callLLM` and display reply.  
+     * `portfolioBtn` → invoke `analyzePortfolio()`.  
+     * `tradeBtn` → prompt for symbol & qty (simple `prompt()` calls) then `placeTrade()`.  
+   - Add basic debouncing or loading state if you wish.  
+   - All functions should use `try/catch` and log errors to console.  
+
+5. Generate **style.css**:  
+   - Style `body`, `#chat`, `.user`, `.assistant`, `header`, `#controls`.  
+   - Use soft colors (e.g., `#d1e7dd` for user, `#ffeeba` for assistant).  
+   - Make chat area scrollable, header fixed at top, controls at bottom.  
+   - Add simple transitions for new messages.  
+
+6. Generate **README.md** with:  
+   - Project description.  
+   - Prerequisites (Node v18+, Ollama running locally, Zerodha Kite MCP server listening on 5000).  
+   - Install & run commands:  
+     ```bash  
+     npm install  
+     npm start   # starts Express on 3000  
+     python -m http.server 8000  # serves /public  
+     ```  
+   - Usage instructions (open `http://localhost:8000`, select model, type chat, use agent buttons).  
+
+## Final Touches
+- After Copilot finishes, run `npm install` and `npm start` to launch the API.  
+- Start the static server: `python -m http.server 8000` (or use VS Code Live Server extension).  
+- Open `http://localhost:8000` in a browser and test chatting with your chosen model.  
+- Test agents by clicking “Analyze Portfolio” and “Place Trade” (you may need to implement the corresponding MCP endpoints locally first).  
+
+**Happy coding!**  

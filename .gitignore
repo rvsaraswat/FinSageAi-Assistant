@@ -1,0 +1,33 @@
+# Environment variables with sensitive data
+.env
+
+# Dependency directories
+node_modules/
+package-lock.json
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build outputs
+dist/
+build/
+
+# Local test data
+test-data/
+*.local.*
+
+# Docker volumes
+docker-volumes/

@@ -1,0 +1,45 @@
+{
+  "name": "finsageai-assistant",
+  "version": "1.0.0",
+  "description": "AI-powered trading assistant for Zerodha Kite - Local LLMs + Real-time portfolio analysis + Trade execution",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "verify": "node verify-setup.js",
+    "postinstall": "node -e \"console.log('\\n✅ Dependencies installed!\\n📋 Next: Run \\\"npm run verify\\\" to check your setup\\n')\""
+  },
+  "keywords": [
+    "zerodha",
+    "kite-connect",
+    "trading",
+    "portfolio",
+    "ollama",
+    "llm",
+    "ai",
+    "fintech",
+    "investment",
+    "stock-market"
+  ],
+  "author": "FinSageAi Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YOUR_USERNAME/FinSageAi-Assistant.git"
+  },
+  "bugs": {
+    "url": "https://github.com/YOUR_USERNAME/FinSageAi-Assistant/issues"
+  },
+  "homepage": "https://github.com/YOUR_USERNAME/FinSageAi-Assistant#readme",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.21.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.19.2",
+    "node-fetch": "^3.3.2"
+  }
+}

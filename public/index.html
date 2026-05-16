@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FinSageAi Assistant</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1>FinSageAi Assistant</h1>
+    <p class="tagline">Your AI-Powered Financial Advisor | Smart Insights for Smarter Investments</p>
+  </header>
+
+  <main>
+    <div id="chat" aria-live="polite" aria-label="Chat messages"></div>
+  </main>
+
+  <div id="controls">
+    <div class="row">
+      <label for="modelSelect">Model:</label>
+      <select id="modelSelect">
+        <option value="">Loading models...</option>
+      </select>
+
+      <button id="kiteLoginBtn" title="Login to Zerodha Kite">🔐 Kite Login</button>
+      <button id="portfolioBtn" title="Analyze your holdings">Analyze Portfolio</button>
+      <button id="tradeBtn" title="Place a trade order">Place Trade</button>
+      <button id="settingsBtn" title="AI Settings & Custom Prompts">⚙️ Settings</button>
+    </div>
+
+    <div class="row">
+      <input id="userInput" placeholder="Ask me something..." />
+      <button id="sendBtn">Send</button>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="modal-overlay" hidden>
+    <div class="modal">
+      <div class="modal-header">
+        <h2>⚙️ AI Settings</h2>
+        <button id="closeSettingsBtn" class="modal-close" title="Close">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="settings-section">
+          <span class="section-label">Quick Presets</span>
+          <div class="preset-buttons">
+            <button class="preset-btn active" data-preset="default">🤖 Default</button>
+            <button class="preset-btn" data-preset="conservative">🛡️ Conservative</button>
+            <button class="preset-btn" data-preset="growth">📈 Growth</button>
+            <button class="preset-btn" data-preset="trader">⚡ Day Trader</button>
+            <button class="preset-btn" data-preset="tax">🧾 Tax-Saver</button>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <span class="section-label">Investor Profile <span class="hint">(added to every AI response)</span></span>
+          <div class="profile-grid">
+            <div class="profile-field">
+              <label for="riskTolerance">Risk Tolerance</label>
+              <select id="riskTolerance">
+                <option value="">Not specified</option>
+                <option value="Low (capital preservation)">Low — Capital Preservation</option>
+                <option value="Medium (balanced growth)">Medium — Balanced</option>
+                <option value="High (aggressive growth)">High — Aggressive Growth</option>
+              </select>
+            </div>
+            <div class="profile-field">
+              <label for="investmentHorizon">Investment Horizon</label>
+              <select id="investmentHorizon">
+                <option value="">Not specified</option>
+                <option value="Short-term (under 1 year)">Short-term (&lt;1 year)</option>
+                <option value="Medium-term (1–3 years)">Medium-term (1–3 years)</option>
+                <option value="Long-term (3+ years)">Long-term (3+ years)</option>
+              </select>
+            </div>
+            <div class="profile-field">
+              <label for="taxBracket">Income Tax Bracket</label>
+              <select id="taxBracket">
+                <option value="">Not specified</option>
+                <option value="Nil tax bracket">Nil (below ₹3L)</option>
+                <option value="5% tax bracket">5% (₹3L–₹7L)</option>
+                <option value="10% tax bracket">10% (₹7L–₹10L)</option>
+                <option value="15% tax bracket">15% (₹10L–₹12L)</option>
+                <option value="20% tax bracket">20% (₹12L–₹15L)</option>
+                <option value="30% tax bracket">30% (above ₹15L)</option>
+              </select>
+            </div>
+            <div class="profile-field">
+              <label for="capitalRange">Investable Capital</label>
+              <select id="capitalRange">
+                <option value="">Not specified</option>
+                <option value="under ₹5 lakh">Under ₹5 Lakh</option>
+                <option value="₹5L–₹25L">₹5L – ₹25L</option>
+                <option value="₹25L–₹1 crore">₹25L – ₹1 Crore</option>
+                <option value="above ₹1 crore">Above ₹1 Crore</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <span class="section-label">System Prompt <span class="hint">(defines AI persona — edit freely)</span></span>
+          <textarea id="systemPromptText" rows="14" placeholder="Enter custom instructions for the AI..."></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="saveSettingsBtn" class="btn-primary">💾 Save Settings</button>
+        <button id="cancelSettingsBtn" class="btn-secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+
+</body>
+</html>
+</html>
