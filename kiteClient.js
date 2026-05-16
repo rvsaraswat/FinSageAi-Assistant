@@ -123,7 +123,31 @@ export async function placeOrder(orderParams, creds = {}) {
     if (!orderParams[field]) throw new Error(`Missing required field: ${field}`);
   }
 
-  const params = { validity: 'DAY', ...orderParams };
+  // Enum validation
+  const VALID_EXCHANGES    = new Set(['NSE', 'BSE', 'NFO', 'BFO', 'MCX', 'CDS']);
+  const VALID_TX_TYPES     = new Set(['BUY', 'SELL']);
+  const VALID_ORDER_TYPES  = new Set(['MARKET', 'LIMIT', 'SL', 'SL-M']);
+  const VALID_PRODUCTS     = new Set(['CNC', 'MIS', 'NRML', 'CO', 'BO']);
+
+  if (!VALID_EXCHANGES.has(orderParams.exchange))
+    throw new Error(`Invalid exchange '${orderParams.exchange}'. Must be one of: ${[...VALID_EXCHANGES].join(', ')}`);
+  if (!VALID_TX_TYPES.has(orderParams.transaction_type))
+    throw new Error(`Invalid transaction_type '${orderParams.transaction_type}'. Must be BUY or SELL`);
+  if (!VALID_ORDER_TYPES.has(orderParams.order_type))
+    throw new Error(`Invalid order_type '${orderParams.order_type}'. Must be one of: ${[...VALID_ORDER_TYPES].join(', ')}`);
+  if (!VALID_PRODUCTS.has(orderParams.product))
+    throw new Error(`Invalid product '${orderParams.product}'. Must be one of: ${[...VALID_PRODUCTS].join(', ')}`);
+
+  // Quantity must be a positive integer
+  const qty = Number(orderParams.quantity);
+  if (!Number.isInteger(qty) || qty <= 0)
+    throw new Error('quantity must be a positive integer');
+
+  // Sanitize tradingsymbol: only allow alphanumeric, hyphen, ampersand, dot
+  if (!/^[A-Z0-9&._-]{1,30}$/i.test(orderParams.tradingsymbol))
+    throw new Error(`Invalid tradingsymbol: '${orderParams.tradingsymbol}'`);
+
+  const params = { validity: 'DAY', ...orderParams, quantity: qty };
 
   if (params.order_type === 'LIMIT' && !params.price) {
     throw new Error('Price is required for LIMIT orders');

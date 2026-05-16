@@ -14,6 +14,10 @@ services:
       - NODE_ENV=production
       - PORT=15600
       - OLLAMA_URL=http://host.docker.internal:11434
+      # Set these to override values from .env:
+      # - APP_SECRET=change-this-to-a-random-64-char-hex-string
+      # - CORS_ORIGIN=https://yourdomain.com
+      # - ADMIN_TOKEN=change-this-to-a-secure-random-token
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:15600/api/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1));"]
