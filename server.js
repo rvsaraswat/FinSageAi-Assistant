@@ -428,6 +428,19 @@ app.get('/api/models', async (req, res) => {
     const data = await response.json();
     // Exclude embedding-only models — they don't support chat
     const EMBED_FAMILIES = new Set(['bert', 'nomic-bert']);
+    // Also fetch running models from /api/ps to get actual RAM usage
+    let runningMap = {};
+    try {
+      const psRes = await fetch(`${OLLAMA_BASE}/api/ps`);
+      if (psRes.ok) {
+        const psData = await psRes.json();
+        for (const r of (psData.models || [])) {
+          // size_vram + (size - size_vram) = total RAM; fallback to size
+          runningMap[r.name] = (r.size_vram || 0) + ((r.size || 0) - (r.size_vram || 0));
+        }
+      }
+    } catch { /* non-critical */ }
+
     const models = (data.models || [])
       .filter(m => {
         const families = m.details?.families || [];
@@ -437,8 +450,9 @@ app.get('/api/models', async (req, res) => {
       })
       .map(m => ({
         name: m.name,
-        size: m.size || 0,           // file size on disk in bytes
-        paramSize: m.details?.parameter_size || '' // e.g. "14B", "7B"
+        size: m.size || 0,              // file size on disk in bytes
+        paramSize: m.details?.parameter_size || '', // e.g. "14B", "7B"
+        ramSize: runningMap[m.name] || 0 // actual RAM bytes if currently loaded
       }));
     res.json({ models });
   } catch (err) {

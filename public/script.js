@@ -159,7 +159,7 @@ function getEffectiveSystemPrompt() {
 loadSettings();
 
 // Dynamically load available Ollama models
-function formatDiskSize(bytes) {
+function formatGB(bytes) {
   if (!bytes) return '';
   const gb = bytes / 1_073_741_824;
   return gb >= 1 ? `${gb.toFixed(1)} GB` : `${(bytes / 1_048_576).toFixed(0)} MB`;
@@ -170,6 +170,15 @@ function parseParamBillions(paramSize) {
   if (!paramSize) return null;
   const m = paramSize.match(/^(\d+(?:\.\d+)?)[Bb]/)
   return m ? parseFloat(m[1]) : null;
+}
+
+// Estimate RAM usage in GB from parameter count
+// Formula: ~1.1 GB per billion params (Q4 quant) + 1.5 GB runtime overhead
+function estimateRamGB(paramSize, diskBytes) {
+  const p = parseParamBillions(paramSize);
+  if (p !== null) return Math.round(p * 1.1 + 1.5);
+  // Fallback: 1.5× disk size
+  return Math.round((diskBytes / 1_073_741_824) * 1.5);
 }
 
 // Tier by parameter count (best proxy for RAM requirements)
@@ -219,8 +228,11 @@ async function loadModels() {
       .map(([tier, list]) => {
         const options = list
           .map(m => {
-            const disk = m.size ? formatDiskSize(m.size) + ' disk' : '';
-            const label = [m.name, disk].filter(Boolean).join('  ·  ');
+            const disk = m.size ? formatGB(m.size) + ' disk' : '';
+            const ram  = m.ramSize
+              ? formatGB(m.ramSize) + ' RAM (running)'
+              : (m.size || m.paramSize ? '~' + estimateRamGB(m.paramSize, m.size) + ' GB RAM est.' : '');
+            const label = [m.name, disk, ram].filter(Boolean).join('  ·  ');
             return `<option value="${m.name}">${label}</option>`;
           })
           .join('');
