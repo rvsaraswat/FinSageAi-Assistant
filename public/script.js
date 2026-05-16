@@ -144,12 +144,52 @@ function getEffectiveSystemPrompt() {
 loadSettings();
 
 // Dynamically load available Ollama models
+function formatSize(bytes) {
+  if (!bytes) return '';
+  const gb = bytes / 1_073_741_824;
+  return gb >= 1 ? `${gb.toFixed(1)} GB` : `${(bytes / 1_048_576).toFixed(0)} MB`;
+}
+
+function modelTier(bytes) {
+  const gb = bytes / 1_073_741_824;
+  if (gb < 2)  return 'small';
+  if (gb < 8)  return 'medium';
+  if (gb < 14) return 'large';
+  return 'xlarge';
+}
+
+const TIER_META = {
+  small:  { label: '🟢 Small  ·  runs on 8 GB RAM',   order: 0 },
+  medium: { label: '🟡 Medium  ·  needs 12–16 GB RAM', order: 1 },
+  large:  { label: '🟠 Large  ·  needs 16–24 GB RAM',  order: 2 },
+  xlarge: { label: '🔴 X-Large  ·  needs 24 GB+ RAM',  order: 3 },
+};
+
 async function loadModels() {
   try {
     const res = await fetch('/api/models');
     const { models } = await res.json();
     if (!models || models.length === 0) return;
-    modelSelectEl.innerHTML = models.map(m => `<option value="${m}">${m}</option>`).join('');
+
+    // Group by tier
+    const groups = {};
+    for (const m of models) {
+      const tier = modelTier(m.size);
+      if (!groups[tier]) groups[tier] = [];
+      groups[tier].push(m);
+    }
+
+    // Build optgroups sorted by tier order
+    modelSelectEl.innerHTML = Object.entries(groups)
+      .sort((a, b) => TIER_META[a[0]].order - TIER_META[b[0]].order)
+      .map(([tier, list]) => {
+        const options = list
+          .map(m => `<option value="${m.name}">${m.name}${m.size ? '  ·  ' + formatSize(m.size) : ''}</option>`)
+          .join('');
+        return `<optgroup label="${TIER_META[tier].label}">${options}</optgroup>`;
+      })
+      .join('');
+
     currentModel = modelSelectEl.value;
   } catch (e) {
     console.warn('Could not load models:', e);

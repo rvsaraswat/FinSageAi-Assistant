@@ -279,13 +279,16 @@ app.post('/api/mcp', async (req, res) => {
   }
 });
 
-// GET /api/models - list available Ollama models
+// GET /api/models - list available Ollama models with size info
 app.get('/api/models', async (req, res) => {
   try {
     const response = await fetch(`${OLLAMA_BASE}/api/tags`);
     if (!response.ok) throw new Error(`Ollama responded with ${response.status}`);
     const data = await response.json();
-    const models = (data.models || []).map(m => m.name);
+    const models = (data.models || []).map(m => ({
+      name: m.name,
+      size: m.size || 0   // size in bytes from Ollama
+    }));
     res.json({ models });
   } catch (err) {
     res.status(500).json({ error: err.message });

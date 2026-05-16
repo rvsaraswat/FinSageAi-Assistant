@@ -79,6 +79,23 @@ main {
   cursor: pointer;
 }
 
+#modelSelect {
+  max-width: 220px;
+  font-size: 0.85em;
+}
+
+#modelSelect optgroup {
+  font-weight: 700;
+  font-style: normal;
+  color: #555;
+}
+
+#modelSelect option {
+  font-weight: 400;
+  color: #222;
+  padding-left: 4px;
+}
+
 .bubble {
   max-width: 80%;
   padding: 10px 12px;
