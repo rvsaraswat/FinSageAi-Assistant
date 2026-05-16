@@ -1,0 +1,13 @@
+node_modules
+npm-debug.log
+.env
+.git
+.gitignore
+*.md
+README.md
+SETUP_ZERODHA_DATA.md
+KITE_AUTH_GUIDE.md
+CHARTS_GUIDE.md
+zerodha_ai_prompt.txt
+.vscode
+.DS_Store

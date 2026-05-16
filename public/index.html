@@ -6,6 +6,7 @@
   <title>FinSageAi Assistant</title>
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.3/dist/purify.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -25,8 +26,7 @@
         <option value="">Loading models...</option>
       </select>
 
-      <button id="kiteLoginBtn" title="Login to Zerodha Kite">🔐 Kite Login</button>
-      <button id="portfolioBtn" title="Analyze your holdings">Analyze Portfolio</button>
+      <button id="kiteLoginBtn" title="Login to Zerodha Kite">🔐 Kite Login</button>      <button id="accountsBtn" title="Manage Zerodha accounts">🔑 Accounts</button>      <button id="portfolioBtn" title="Analyze your holdings">Analyze Portfolio</button>
       <button id="tradeBtn" title="Place a trade order">Place Trade</button>
       <button id="settingsBtn" title="AI Settings & Custom Prompts">⚙️ Settings</button>
     </div>
@@ -34,6 +34,35 @@
     <div class="row">
       <input id="userInput" placeholder="Ask me something..." />
       <button id="sendBtn">Send</button>
+    </div>
+  </div>
+
+  <!-- Accounts Modal -->
+  <div id="accountsModal" class="modal-overlay" hidden>
+    <div class="modal">
+      <div class="modal-header">
+        <h2>🔑 Zerodha Accounts</h2>
+        <button id="closeAccountsBtn" class="modal-close" title="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-section">
+          <span class="section-label">Saved Accounts</span>
+          <div id="accountsList"><p class="accounts-empty">Loading...</p></div>
+        </div>
+        <div class="settings-section">
+          <span class="section-label">Add New Account <span class="hint">(credentials stored encrypted on your server)</span></span>
+          <div class="account-form">
+            <input id="accName"      placeholder="Account name (e.g. My Zerodha)" />
+            <input id="accApiKey"    placeholder="API Key" autocomplete="off" />
+            <input id="accApiSecret" placeholder="API Secret" type="password" autocomplete="new-password" />
+            <button id="addAccountBtn" class="btn-primary">+ Add Account</button>
+          </div>
+          <p class="hint" style="margin-top:8px">⚠️ API Secret is encrypted (AES-256-GCM) before storage. It is never sent to the browser.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="closeAccountsFooterBtn" class="btn-secondary">Close</button>
+      </div>
     </div>
   </div>
 

@@ -460,7 +460,108 @@ main {
 }
 .btn-secondary:hover { background: #e9ecef; }
 
+/* ─── ACCOUNTS MODAL ────────────────────────────────────────────────────── */
+
+.accounts-empty {
+  color: #888;
+  font-size: 0.9em;
+  margin: 0;
+  padding: 12px 0;
+}
+
+.account-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1.5px solid #e9ecef;
+  border-radius: 8px;
+  background: #fafafa;
+  margin-bottom: 8px;
+}
+.account-item.acc-active {
+  border-color: #3c88fc;
+  background: #f0f6ff;
+}
+
+.account-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.account-name {
+  font-weight: 600;
+  font-size: 0.95em;
+  color: #222;
+}
+.acc-badge {
+  font-size: 0.75em;
+  color: #3c88fc;
+  font-weight: 600;
+  display: inline-block;
+  margin-left: 6px;
+}
+.account-key {
+  font-size: 0.78em;
+  color: #888;
+  font-family: monospace;
+}
+.account-status {
+  font-size: 0.8em;
+}
+.status-ok   { color: #2e7d32; }
+.status-warn { color: #b35f00; }
+
+.account-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.btn-sm {
+  padding: 5px 12px;
+  font-size: 0.8em;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 500;
+  border: 1px solid transparent;
+}
+.btn-sm.btn-primary  { background: #3c88fc; color: #fff; border-color: #3c88fc; }
+.btn-sm.btn-primary:hover { background: #2a74e8; }
+.btn-sm.btn-outline  { background: #fff; color: #444; border-color: #ced4da; }
+.btn-sm.btn-outline:hover { background: #f0f0f0; }
+.btn-sm.btn-danger   { background: #fff; color: #c0392b; border-color: #e0b0b0; }
+.btn-sm.btn-danger:hover  { background: #fdecea; border-color: #c0392b; }
+
+.account-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.account-form input {
+  padding: 9px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  font-size: 0.9em;
+  background: #fff;
+  color: #222;
+}
+.account-form input:focus { outline: none; border-color: #3c88fc; }
+
+.hint {
+  font-size: 0.8em;
+  color: #888;
+}
+
+/* ─── RESPONSIVE ────────────────────────────────────────────────────────── */
+
 @media (max-width: 520px) {
   .profile-grid { grid-template-columns: 1fr; }
   .modal { max-height: 95vh; }
+  .account-item { flex-direction: column; }
+  .account-actions { width: 100%; justify-content: flex-end; }
 }

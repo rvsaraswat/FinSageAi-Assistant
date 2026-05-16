@@ -1,11 +1,26 @@
 // ZeroAI Assistant front-end logic
-const chatEl = document.getElementById('chat');
-const userInputEl = document.getElementById('userInput');
-const sendBtnEl = document.getElementById('sendBtn');
+const chatEl        = document.getElementById('chat');
+const userInputEl   = document.getElementById('userInput');
+const sendBtnEl     = document.getElementById('sendBtn');
 const modelSelectEl = document.getElementById('modelSelect');
-const kiteLoginBtnEl = document.getElementById('kiteLoginBtn');
-const portfolioBtnEl = document.getElementById('portfolioBtn');
-const tradeBtnEl = document.getElementById('tradeBtn');
+const kiteLoginBtnEl= document.getElementById('kiteLoginBtn');
+const accountsBtnEl = document.getElementById('accountsBtn');
+const portfolioBtnEl= document.getElementById('portfolioBtn');
+const tradeBtnEl    = document.getElementById('tradeBtn');
+
+// ─── Fetch with timeout helper ────────────────────────────────────────────────────
+async function fetchWithTimeout(url, options = {}, timeoutMs = 30000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (err) {
+    if (err.name === 'AbortError') throw new Error(`Request timed out after ${timeoutMs / 1000}s`);
+    throw err;
+  } finally {
+    clearTimeout(id);
+  }
+}
 
 let currentModel = '';
 modelSelectEl.addEventListener('change', () => {
@@ -167,7 +182,7 @@ const TIER_META = {
 
 async function loadModels() {
   try {
-    const res = await fetch('/api/models');
+    const res = await fetchWithTimeout('/api/models', {}, 10000);
     const { models } = await res.json();
     if (!models || models.length === 0) return;
 
@@ -199,22 +214,25 @@ loadModels();
 
 // Check for Kite callback on page load
 window.addEventListener('DOMContentLoaded', async () => {
-  const params = new URLSearchParams(window.location.search);
+  const params       = new URLSearchParams(window.location.search);
   const requestToken = params.get('request_token');
-  const status = params.get('status');
-  
+  const status       = params.get('status');
+
   if (requestToken && status === 'success') {
+    // Retrieve account_id saved before OAuth redirect
+    const accountId = sessionStorage.getItem('pendingLoginAccountId') || null;
+    sessionStorage.removeItem('pendingLoginAccountId');
+
     addMessage('assistant', '🔐 Authenticating with Zerodha...');
     try {
-      const res = await fetch('/api/kite/token', {
+      const res = await fetchWithTimeout('/api/kite/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ request_token: requestToken })
-      });
+        body: JSON.stringify({ request_token: requestToken, account_id: accountId }),
+      }, 30000);
       const data = await res.json();
       if (data.success) {
         addMessage('assistant', `✅ ${data.message} Welcome, ${data.user}!`);
-        // Clear URL parameters
         window.history.replaceState({}, document.title, window.location.pathname);
       } else {
         addMessage('assistant', `❌ Authentication failed: ${data.error}`);
@@ -267,8 +285,11 @@ function addMessage(sender, text) {
       }
     });
     
-    // Parse remaining text as markdown
-    div.innerHTML = marked.parse(textWithoutCharts);
+    // Parse remaining text as markdown, sanitized with DOMPurify
+    const rawHtml = marked.parse(textWithoutCharts);
+    div.innerHTML = (typeof DOMPurify !== 'undefined')
+      ? DOMPurify.sanitize(rawHtml)
+      : rawHtml;
     
     // Render extracted charts
     chartBlocks.forEach(chartData => {
@@ -310,10 +331,11 @@ function removeTypingIndicator() {
 
 async function callLLM(prompt) {
   const payload = { model: currentModel, prompt, systemPrompt: getEffectiveSystemPrompt() };
-  const res = await fetch('/api/llm', {
+  const res = await fetchWithTimeout('/api/llm', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
+  }, 120000); // 2-min timeout for LLM
   });
   if (!res.ok) {
     const txt = await res.text();
@@ -330,11 +352,11 @@ async function analyzePortfolio() {
     addMessage('assistant', '📊 Fetching your real portfolio data from Zerodha...');
     
     // Call MCP to get real portfolio data
-    const mcpRes = await fetch('/api/mcp', {
+    const mcpRes = await fetchWithTimeout('/api/mcp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'get_holdings', params: {} })
-    });
+      body: JSON.stringify({ action: 'get_holdings', params: {} }),
+    }, 30000);
     
     if (!mcpRes.ok) {
       const errorData = await mcpRes.json().catch(() => ({}));
@@ -531,14 +553,11 @@ async function executeOrder(orderParams) {
     
     addMessage('assistant', '⏳ Executing order...');
     
-    const res = await fetch('/api/mcp', {
+    const res = await fetchWithTimeout('/api/mcp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        action: 'place_order', 
-        params: orderParams
-      })
-    });
+      body: JSON.stringify({ action: 'place_order', params: orderParams }),
+    }, 30000);
     
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({ error: res.statusText }));
@@ -622,18 +641,109 @@ sendBtnEl.addEventListener('click', handleSend);
 userInputEl.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') handleSend();
 });
-kiteLoginBtnEl.addEventListener('click', async () => {
+kiteLoginBtnEl.addEventListener('click', () => openAccountsModal());
+
+// ─── ACCOUNTS MODAL ──────────────────────────────────────────────────────────
+
+const accountsModalEl        = document.getElementById('accountsModal');
+const closeAccountsBtnEl     = document.getElementById('closeAccountsBtn');
+const closeAccountsFooterBtn = document.getElementById('closeAccountsFooterBtn');
+const addAccountBtnEl        = document.getElementById('addAccountBtn');
+
+function openAccountsModal() {
+  loadAccounts();
+  accountsModalEl.removeAttribute('hidden');
+}
+function closeAccountsModal() {
+  accountsModalEl.setAttribute('hidden', '');
+}
+
+accountsBtnEl.addEventListener('click', openAccountsModal);
+closeAccountsBtnEl.addEventListener('click', closeAccountsModal);
+closeAccountsFooterBtn.addEventListener('click', closeAccountsModal);
+accountsModalEl.addEventListener('click', e => { if (e.target === accountsModalEl) closeAccountsModal(); });
+
+async function loadAccounts() {
+  const listEl = document.getElementById('accountsList');
   try {
-    const res = await fetch('/api/kite/login');
+    const res  = await fetchWithTimeout('/api/accounts', {}, 10000);
+    const { accounts } = await res.json();
+    renderAccountsList(accounts);
+  } catch (e) {
+    listEl.innerHTML = '<p class="accounts-empty">Could not load accounts.</p>';
+  }
+}
+
+function renderAccountsList(accounts) {
+  const listEl = document.getElementById('accountsList');
+  if (!accounts || accounts.length === 0) {
+    listEl.innerHTML = '<p class="accounts-empty">No accounts added yet. Fill in the form below to add your Zerodha API credentials.</p>';
+    return;
+  }
+  listEl.innerHTML = accounts.map(a => {
+    const statusClass = (a.has_token && !a.token_expired) ? 'status-ok' : 'status-warn';
+    const statusText  = a.has_token
+      ? (a.token_expired ? '⚠️ Token expired — re-login needed' : `✅ Authenticated${a.user_name ? ' — ' + a.user_name : ''}`)
+      : '🔒 Not logged in';
+    return `
+      <div class="account-item${a.is_active ? ' acc-active' : ''}">
+        <div class="account-info">
+          <span class="account-name">${a.name}</span>
+          ${a.is_active ? '<span class="acc-badge">● Active</span>' : ''}
+          <span class="account-key">${a.api_key_hint}</span>
+          <span class="account-status ${statusClass}">${statusText}</span>
+        </div>
+        <div class="account-actions">
+          ${!a.is_active ? `<button class="btn-sm btn-outline" onclick="activateAccount('${a.id}')">Set Active</button>` : ''}
+          <button class="btn-sm btn-primary" onclick="loginAccount('${a.id}')">&#128274; Login</button>
+          <button class="btn-sm btn-danger" onclick="deleteAccount('${a.id}')">&#10005;</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+window.activateAccount = async function(id) {
+  await fetchWithTimeout(`/api/accounts/${id}/activate`, { method: 'POST' }, 10000);
+  await loadAccounts();
+};
+
+window.loginAccount = function(id) {
+  sessionStorage.setItem('pendingLoginAccountId', id);
+  fetchWithTimeout(`/api/kite/login?account_id=${id}`, {}, 10000)
+    .then(r => r.json())
+    .then(data => { if (data.loginUrl) window.location.href = data.loginUrl; })
+    .catch(err => addMessage('assistant', '❌ Error: ' + err.message));
+};
+
+window.deleteAccount = async function(id) {
+  if (!confirm('Remove this Zerodha account? This cannot be undone.')) return;
+  await fetchWithTimeout(`/api/accounts/${id}`, { method: 'DELETE' }, 10000);
+  await loadAccounts();
+};
+
+addAccountBtnEl.addEventListener('click', async () => {
+  const name      = document.getElementById('accName').value.trim();
+  const apiKey    = document.getElementById('accApiKey').value.trim();
+  const apiSecret = document.getElementById('accApiSecret').value.trim();
+  if (!name || !apiKey || !apiSecret) {
+    alert('Please fill in all three fields.');
+    return;
+  }
+  try {
+    const res  = await fetchWithTimeout('/api/accounts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, api_key: apiKey, api_secret: apiSecret }),
+    }, 10000);
     const data = await res.json();
-    if (data.loginUrl) {
-      addMessage('assistant', '🔐 Redirecting to Zerodha login...');
-      window.location.href = data.loginUrl;
-    } else {
-      addMessage('assistant', '❌ Failed to get login URL');
-    }
+    if (!res.ok) { alert('Error: ' + data.error); return; }
+    document.getElementById('accName').value      = '';
+    document.getElementById('accApiKey').value    = '';
+    document.getElementById('accApiSecret').value = '';
+    await loadAccounts();
+    addMessage('assistant', `✅ **Account “${name}” added!** Click the 🔐 Login button next to it to authenticate with Zerodha.`);
   } catch (err) {
-    addMessage('assistant', '❌ Error: ' + err.message);
+    alert('Error: ' + err.message);
   }
 });
 portfolioBtnEl.addEventListener('click', () => analyzePortfolio());

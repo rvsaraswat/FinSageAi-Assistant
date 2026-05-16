@@ -1,4 +1,5 @@
 import fetch from 'node-fetch';
+import { randomUUID } from 'crypto';
 
 // Reset client connection (useful when access token changes)
 export function resetClient() {
@@ -6,79 +7,72 @@ export function resetClient() {
 }
 
 // For remote MCP servers, use direct HTTP calls instead of SDK
-async function callRemoteMCP(url, method, params) {
-  const accessToken = process.env.KITE_ACCESS_TOKEN;
-  const apiKey = process.env.KITE_API_KEY;
-  
+async function callRemoteMCP(url, method, params, creds = {}) {
+  const accessToken = creds.accessToken || process.env.KITE_ACCESS_TOKEN;
+  const apiKey      = creds.apiKey      || process.env.KITE_API_KEY;
+
   if (!accessToken) {
-    throw new Error('KITE_ACCESS_TOKEN is required but not set. Please authenticate first.');
+    throw new Error('KITE_ACCESS_TOKEN is required. Please authenticate first.');
   }
 
-  console.log(`[MCP] Calling ${method} at ${url}`);
-  console.log(`[MCP] Using API Key: ${apiKey?.substring(0, 8)}...`);
-  console.log(`[MCP] Access Token: ${accessToken?.substring(0, 10)}...`);
-  
+  console.log(`[MCP] Calling ${method}`);
+
   const requestBody = {
     jsonrpc: '2.0',
-    id: Date.now(),
-    method: method,
-    params: {
-      ...params,
-      // Try passing credentials at top level of params
-      api_key: apiKey,
-      access_token: accessToken
-    }
+    id: randomUUID(),
+    method,
+    params: { ...params, api_key: apiKey, access_token: accessToken },
   };
 
-  console.log(`[MCP] Request:`, JSON.stringify(requestBody).substring(0, 300));
-  
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Kite-Version': '3',
-      // Also try Authorization header format
-      'Authorization': `token ${apiKey}:${accessToken}`
-    },
-    body: JSON.stringify(requestBody)
-  });
+  const controller = new AbortController();
+  const timeoutId  = setTimeout(() => controller.abort(), 30000);
 
-  const responseText = await response.text();
-  console.log(`[MCP] Response Status: ${response.status}`);
-  console.log(`[MCP] Response Body:`, responseText.substring(0, 500));
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Kite-Version': '3',
+        'Authorization': `token ${apiKey}:${accessToken}`,
+      },
+      body: JSON.stringify(requestBody),
+      signal: controller.signal,
+    });
 
-  if (!response.ok) {
-    throw new Error(`MCP remote error: ${response.status} ${response.statusText} - ${responseText}`);
+    const responseText = await response.text();
+    console.log(`[MCP] Response status: ${response.status}`);
+
+    if (!response.ok) {
+      throw new Error(`MCP remote error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = JSON.parse(responseText);
+    if (data.error) {
+      throw new Error(`MCP error: ${data.error.message || JSON.stringify(data.error)}`);
+    }
+    return data.result;
+  } catch (err) {
+    if (err.name === 'AbortError') throw new Error('MCP request timed out (30s)');
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  const data = JSON.parse(responseText);
-  
-  if (data.error) {
-    throw new Error(`MCP error: ${data.error.message || JSON.stringify(data.error)}`);
-  }
-
-  return data.result;
 }
 
-export async function listMcpTools() {
+export async function listMcpTools(creds = {}) {
   try {
-    // For remote MCP, use direct HTTP call
     const url = process.env.KITE_MCP_URL || 'https://mcp.kite.trade/mcp';
-    const result = await callRemoteMCP(url, 'tools/list', {});
+    const result = await callRemoteMCP(url, 'tools/list', {}, creds);
     return result.tools || [];
   } catch (err) {
     throw new Error(`Failed to list MCP tools: ${err.message}`);
   }
 }
 
-export async function callMcpTool(toolName, toolArgs = {}) {
+export async function callMcpTool(toolName, toolArgs = {}, creds = {}) {
   try {
-    // For remote MCP, use direct HTTP call
     const url = process.env.KITE_MCP_URL || 'https://mcp.kite.trade/mcp';
-    const result = await callRemoteMCP(url, 'tools/call', {
-      name: toolName,
-      arguments: toolArgs
-    });
+    const result = await callRemoteMCP(url, 'tools/call', { name: toolName, arguments: toolArgs }, creds);
     return result;
   } catch (err) {
     throw new Error(`Failed to call MCP tool '${toolName}': ${err.message}`);

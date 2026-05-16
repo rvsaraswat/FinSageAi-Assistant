@@ -2,11 +2,16 @@ import express from 'express';
 import cors from 'cors';
 import fetch from 'node-fetch';
 import crypto from 'crypto';
+import rateLimit from 'express-rate-limit';
 import { callMcpTool, listMcpTools, resetClient } from './mcpClient.js';
 import { getHoldings, getPositions, getQuotes, getProfile, placeOrder } from './kiteClient.js';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import dotenv from 'dotenv';
+import {
+  listAccounts, addAccount, getAccount, getActiveAccount,
+  getAccountSecret, getAccountToken, storeToken, setActive, removeAccount
+} from './db.js';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -27,7 +32,7 @@ console.log(`   OLLAMA_URL: ${OLLAMA_BASE}`);
 app.use(
   cors({
     origin: true,
-    methods: ['GET', 'POST', 'OPTIONS'],
+    methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type'],
   })
 );
@@ -35,8 +40,39 @@ app.use(
 app.options('*', cors());
 app.use(express.json());
 
-// Serve static frontend
-app.use(express.static(join(__dirname, 'public')));
+// ─── Rate Limiting ────────────────────────────────────────────────────────────
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000, max: 100, standardHeaders: true, legacyHeaders: false,
+  message: { error: 'Too many requests, please slow down.' },
+});
+const llmLimiter = rateLimit({
+  windowMs: 60 * 1000, max: 20, standardHeaders: true, legacyHeaders: false,
+  message: { error: 'LLM rate limit exceeded. Max 20 requests/minute.' },
+});
+const authLimiter = rateLimit({
+  windowMs: 60 * 1000, max: 5, standardHeaders: true, legacyHeaders: false,
+  message: { error: 'Too many auth attempts. Please wait before trying again.' },
+});
+// Apply general limit to all /api routes
+app.use('/api/', apiLimiter);
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── Active Credentials Helper ───────────────────────────────────────────────
+// Returns { apiKey, accessToken } from DB-active account first, then env vars.
+function getActiveCredentials() {
+  try {
+    const active = getActiveAccount();
+    if (active) {
+      const token = getAccountToken(active.id);
+      if (token) return { apiKey: active.api_key, accessToken: token };
+    }
+  } catch (_) { /* DB unavailable */ }
+  return {
+    apiKey:      process.env.KITE_API_KEY,
+    accessToken: process.env.KITE_ACCESS_TOKEN,
+  };
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 // Helper: stream NDJSON from Ollama and return the final text
 async function chatWithOllama(model, prompt, systemPrompt = null) {
@@ -116,10 +152,16 @@ Be confident and helpful.`;
   };
 
   console.log(`[LLM] Calling ${url} with model ${model}`);
+
+  const controller = new AbortController();
+  const timeoutId  = setTimeout(() => controller.abort(), 120000); // 2-min LLM timeout
+
+  try {
   let res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
+    signal: controller.signal,
   });
 
   // Fallback to /api/generate if /api/chat not supported
@@ -130,7 +172,8 @@ Be confident and helpful.`;
     res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      signal: controller.signal,
     });
   }
 
@@ -183,57 +226,70 @@ Be confident and helpful.`;
 
   console.log(`[LLM] Response complete: ${finalText.length} chars`);
   return finalText.trim();
+  } catch (err) {
+    if (err.name === 'AbortError') throw new Error('LLM request timed out after 2 minutes');
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 // Helper: call Kite API or local MCP server actions
 async function callMCP(action, params = {}) {
+  const creds = getActiveCredentials();
   // For Kite-specific actions, use direct Kite API
   switch (action) {
     case 'get_holdings':
     case 'holdings':
-      return await getHoldings();
+      return await getHoldings(creds);
     
     case 'get_positions':
     case 'positions':
-      return await getPositions();
+      return await getPositions(creds);
     
     case 'get_profile':
     case 'profile':
-      return await getProfile();
+      return await getProfile(creds);
     
     case 'get_quotes':
     case 'quotes':
       if (params.instruments) {
-        return await getQuotes(params.instruments);
+        return await getQuotes(params.instruments, creds);
       }
       throw new Error('instruments parameter required for quotes');
     
     case 'place_order':
-      return await placeOrder(params);
+      return await placeOrder(params, creds);
     
     default:
       // Try MCP for other actions
       if (process.env.MCP_REMOTE === '1' || process.env.MCP_REMOTE === 'true') {
-        const mcpRes = await callMcpTool(action, params);
-        return mcpRes;
+        return await callMcpTool(action, params, creds);
       }
-      // Fallback: call local HTTP MCP adapter
-      const url = `http://localhost:5000/${encodeURIComponent(action)}`;
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params)
-      });
-      if (!res.ok) {
-        const text = await res.text().catch(() => '');
-        throw new Error(`MCP error ${res.status}: ${text}`);
+      // Fallback: call local HTTP MCP adapter with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      try {
+        const url = `http://localhost:5000/${encodeURIComponent(action)}`;
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(params),
+          signal: controller.signal,
+        });
+        if (!res.ok) throw new Error(`MCP error ${res.status}: ${await res.text().catch(() => '')}`);
+        return await res.json();
+      } catch (err) {
+        if (err.name === 'AbortError') throw new Error('Local MCP request timed out (30s)');
+        throw err;
+      } finally {
+        clearTimeout(timeoutId);
       }
-      return await res.json();
   }
 }
 
 // POST /api/llm -> { model, prompt }
-app.post('/api/llm', async (req, res) => {
+app.post('/api/llm', llmLimiter, async (req, res) => {
   try {
     const { model, prompt, systemPrompt } = req.body || {};
     if (!model || !prompt) {
@@ -261,13 +317,13 @@ app.post('/api/mcp', async (req, res) => {
     if (!action) {
       return res.status(400).json({ error: 'action is required' });
     }
-    
-    // Check if access token is available when using remote MCP
-    const mcpRemote = process.env.MCP_REMOTE === '1' || process.env.MCP_REMOTE === 'true';
-    if (mcpRemote && !process.env.KITE_ACCESS_TOKEN) {
-      return res.status(401).json({ 
-        error: 'Kite authentication required. Please click "🔐 Kite Login" to authenticate first.',
-        needsAuth: true
+
+    // Check credentials (DB-active account or env vars)
+    const creds = getActiveCredentials();
+    if (!creds.accessToken) {
+      return res.status(401).json({
+        error: 'Kite authentication required. Please add a Zerodha account and login via the Accounts panel.',
+        needsAuth: true,
       });
     }
     
@@ -277,6 +333,38 @@ app.post('/api/mcp', async (req, res) => {
     console.error('Error in /api/mcp:', err);
     res.status(500).json({ error: err?.message || 'Unknown error' });
   }
+});
+
+// GET /api/accounts - list stored Zerodha accounts
+app.get('/api/accounts', (req, res) => {
+  res.json({ accounts: listAccounts() });
+});
+
+// POST /api/accounts - add new account (stores credentials encrypted in DB)
+app.post('/api/accounts', (req, res) => {
+  const { name, api_key, api_secret } = req.body || {};
+  if (!name || !api_key || !api_secret) {
+    return res.status(400).json({ error: 'name, api_key, and api_secret are required' });
+  }
+  if (api_key.trim().length < 6 || api_secret.trim().length < 6) {
+    return res.status(400).json({ error: 'Invalid API key or secret format' });
+  }
+  const id = addAccount(name.trim(), api_key.trim(), api_secret.trim());
+  res.json({ id, message: 'Account added. Click Login to authenticate with Zerodha.' });
+});
+
+// DELETE /api/accounts/:id - remove account
+app.delete('/api/accounts/:id', (req, res) => {
+  if (!getAccount(req.params.id)) return res.status(404).json({ error: 'Account not found' });
+  removeAccount(req.params.id);
+  res.json({ message: 'Account removed' });
+});
+
+// POST /api/accounts/:id/activate - set as active account
+app.post('/api/accounts/:id/activate', (req, res) => {
+  if (!getAccount(req.params.id)) return res.status(404).json({ error: 'Account not found' });
+  setActive(req.params.id);
+  res.json({ message: 'Account activated' });
 });
 
 // GET /api/models - list available Ollama models with size info
@@ -353,29 +441,48 @@ app.get('/api/mcp/tools', async (req, res) => {
   }
 });
 
-// GET /api/kite/login - Redirect to Kite login
+// GET /api/kite/login - Redirect to Kite login (supports ?account_id=X for DB accounts)
 app.get('/api/kite/login', (req, res) => {
-  const apiKey = process.env.KITE_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: 'KITE_API_KEY not configured' });
+  const { account_id } = req.query;
+  let apiKey;
+
+  if (account_id) {
+    const account = getAccount(account_id);
+    if (!account) return res.status(404).json({ error: 'Account not found' });
+    apiKey = account.api_key;
+  } else {
+    apiKey = process.env.KITE_API_KEY;
   }
-  const loginUrl = `https://kite.zerodha.com/connect/login?api_key=${apiKey}`;
-  res.json({ loginUrl });
+
+  if (!apiKey) {
+    return res.status(400).json({ error: 'No API key configured. Add a Zerodha account first.' });
+  }
+  const loginUrl = `https://kite.zerodha.com/connect/login?api_key=${apiKey}&v=3`;
+  res.json({ loginUrl, account_id: account_id || null });
 });
 
-// Handle Kite OAuth callback (manual token exchange for now)
-app.post('/api/kite/token', async (req, res) => {
+// Handle Kite OAuth callback — supports both DB accounts and legacy env-var flow
+app.post('/api/kite/token', authLimiter, async (req, res) => {
   try {
-    const { request_token } = req.body;
+    const { request_token, account_id } = req.body;
     if (!request_token) {
       return res.status(400).json({ error: 'request_token is required' });
     }
 
-    const apiKey = process.env.KITE_API_KEY;
-    const apiSecret = process.env.KITE_API_SECRET;
-    
+    let apiKey, apiSecret;
+
+    if (account_id) {
+      const account = getAccount(account_id);
+      if (!account) return res.status(404).json({ error: 'Account not found' });
+      apiKey    = account.api_key;
+      apiSecret = getAccountSecret(account_id);
+    } else {
+      apiKey    = process.env.KITE_API_KEY;
+      apiSecret = process.env.KITE_API_SECRET;
+    }
+
     if (!apiKey || !apiSecret) {
-      return res.status(500).json({ error: 'KITE_API_KEY or KITE_API_SECRET not configured' });
+      return res.status(500).json({ error: 'API key/secret not configured' });
     }
 
     // Generate checksum: sha256(api_key + request_token + api_secret)
@@ -383,43 +490,50 @@ app.post('/api/kite/token', async (req, res) => {
       .update(apiKey + request_token + apiSecret)
       .digest('hex');
 
-    console.log(`[Kite Auth] Exchanging request_token for access_token...`);
-    
-    // Exchange request token for access token
-    const response = await fetch('https://api.kite.trade/session/token', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'X-Kite-Version': '3'
-      },
-      body: new URLSearchParams({
-        api_key: apiKey,
-        request_token: request_token,
-        checksum: checksum
-      })
-    });
+    console.log('[Kite Auth] Exchanging request_token for access_token...');
+
+    const controller = new AbortController();
+    const timeoutId  = setTimeout(() => controller.abort(), 30000);
+    let response;
+    try {
+      response = await fetch('https://api.kite.trade/session/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Kite-Version': '3' },
+        body: new URLSearchParams({ api_key: apiKey, request_token, checksum }),
+        signal: controller.signal,
+      });
+    } catch (err) {
+      if (err.name === 'AbortError') throw new Error('Token exchange timed out (30s)');
+      throw err;
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error('[Kite Auth] Failed:', errorText);
-      return res.status(response.status).json({ 
-        error: `Kite API error: ${errorText}` 
-      });
+      return res.status(response.status).json({ error: `Kite API error: ${errorText}` });
     }
 
     const data = await response.json();
     console.log('[Kite Auth] Success! Access token obtained.');
-    
-    // Store in environment (in-memory for this session)
-    process.env.KITE_ACCESS_TOKEN = data.data.access_token;
-    
+
+    if (account_id) {
+      // Store encrypted in DB and set as active
+      storeToken(account_id, data.data.access_token, data.data.user_name);
+      setActive(account_id);
+    } else {
+      // Legacy: store in process.env for backward compatibility
+      process.env.KITE_ACCESS_TOKEN = data.data.access_token;
+    }
+
     // Reset MCP client to use new access token
     resetClient();
-    
-    res.json({ 
-      success: true, 
-      user: data.data.user_name,
-      message: 'Authentication successful! You can now access your portfolio data.'
+
+    res.json({
+      success: true,
+      user:    data.data.user_name,
+      message: 'Authentication successful! You can now access your portfolio data.',
     });
   } catch (err) {
     console.error('[Kite Auth] Error:', err);

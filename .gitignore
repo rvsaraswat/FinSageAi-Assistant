@@ -29,5 +29,8 @@ build/
 test-data/
 *.local.*
 
+# SQLite database (contains encrypted credentials)
+data/
+
 # Docker volumes
 docker-volumes/
