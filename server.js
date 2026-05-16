@@ -80,6 +80,9 @@ const authLimiter = rateLimit({
 app.use('/api/', apiLimiter);
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Serve static frontend from public/
+app.use(express.static(join(__dirname, 'public')));
+
 // ─── Active Credentials Helper ───────────────────────────────────────────────
 // Returns { apiKey, accessToken } from DB-active account first, then env vars.
 function getActiveCredentials() {

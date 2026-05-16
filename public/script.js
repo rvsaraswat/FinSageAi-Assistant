@@ -336,7 +336,6 @@ async function callLLM(prompt) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   }, 120000); // 2-min timeout for LLM
-  });
   if (!res.ok) {
     const txt = await res.text();
     throw new Error(`LLM error ${res.status}: ${txt}`);
