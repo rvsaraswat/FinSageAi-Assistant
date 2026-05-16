@@ -662,6 +662,16 @@ closeAccountsBtnEl.addEventListener('click', closeAccountsModal);
 closeAccountsFooterBtn.addEventListener('click', closeAccountsModal);
 accountsModalEl.addEventListener('click', e => { if (e.target === accountsModalEl) closeAccountsModal(); });
 
+// Event delegation for account list buttons (avoids inline onclick / CSP script-src-attr issues)
+document.getElementById('accountsList').addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const { action, id } = btn.dataset;
+  if (action === 'activate') await activateAccount(id);
+  else if (action === 'login')    loginAccount(id);
+  else if (action === 'delete')   await deleteAccount(id);
+});
+
 async function loadAccounts() {
   const listEl = document.getElementById('accountsList');
   try {
@@ -693,32 +703,32 @@ function renderAccountsList(accounts) {
           <span class="account-status ${statusClass}">${statusText}</span>
         </div>
         <div class="account-actions">
-          ${!a.is_active ? `<button class="btn-sm btn-outline" onclick="activateAccount('${a.id}')">Set Active</button>` : ''}
-          <button class="btn-sm btn-primary" onclick="loginAccount('${a.id}')">&#128274; Login</button>
-          <button class="btn-sm btn-danger" onclick="deleteAccount('${a.id}')">&#10005;</button>
+          ${!a.is_active ? `<button class="btn-sm btn-outline" data-action="activate" data-id="${a.id}">Set Active</button>` : ''}
+          <button class="btn-sm btn-primary" data-action="login" data-id="${a.id}">&#128274; Login</button>
+          <button class="btn-sm btn-danger"  data-action="delete" data-id="${a.id}">&#10005;</button>
         </div>
       </div>`;
   }).join('');
 }
 
-window.activateAccount = async function(id) {
+async function activateAccount(id) {
   await fetchWithTimeout(`/api/accounts/${id}/activate`, { method: 'POST' }, 10000);
   await loadAccounts();
-};
+}
 
-window.loginAccount = function(id) {
+function loginAccount(id) {
   sessionStorage.setItem('pendingLoginAccountId', id);
   fetchWithTimeout(`/api/kite/login?account_id=${id}`, {}, 10000)
     .then(r => r.json())
     .then(data => { if (data.loginUrl) window.location.href = data.loginUrl; })
     .catch(err => addMessage('assistant', '❌ Error: ' + err.message));
-};
+}
 
-window.deleteAccount = async function(id) {
+async function deleteAccount(id) {
   if (!confirm('Remove this Zerodha account? This cannot be undone.')) return;
   await fetchWithTimeout(`/api/accounts/${id}`, { method: 'DELETE' }, 10000);
   await loadAccounts();
-};
+}
 
 addAccountBtnEl.addEventListener('click', async () => {
   const name      = document.getElementById('accName').value.trim();
