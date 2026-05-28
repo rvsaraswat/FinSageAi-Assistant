@@ -64,16 +64,24 @@ app.options('*', cors());
 app.use(express.json({ limit: '256kb' })); // limit request body size
 
 // ─── Rate Limiting ────────────────────────────────────────────────────────────
-const apiLimiter = rateLimit({
+// Trust proxy only when behind a known reverse proxy (e.g. Docker/nginx).
+// Using 'loopback' means we only trust X-Forwarded-For from 127.0.0.1,
+// preventing external IP spoofing while silencing the express-rate-limit warning.
+app.set('trust proxy', 'loopback');
+
+const apiLimiter  = rateLimit({
   windowMs: 60 * 1000, max: 100, standardHeaders: true, legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   message: { error: 'Too many requests, please slow down.' },
 });
-const llmLimiter = rateLimit({
+const llmLimiter  = rateLimit({
   windowMs: 60 * 1000, max: 20, standardHeaders: true, legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   message: { error: 'LLM rate limit exceeded. Max 20 requests/minute.' },
 });
 const authLimiter = rateLimit({
   windowMs: 60 * 1000, max: 5, standardHeaders: true, legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
   message: { error: 'Too many auth attempts. Please wait before trying again.' },
 });
 // Apply general limit to all /api routes

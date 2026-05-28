@@ -205,7 +205,26 @@ main {
   background: #d1dae4;
   border: 1px solid #ffffff;
   margin-right: auto;
-  overflow-x: auto; /* wide tables scroll inside the bubble */
+  /* overflow-x removed: tables now have their own .table-scroll wrapper */
+}
+
+/* Scrollable wrapper injected around <table> elements by addMessage() */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* momentum scroll on iOS */
+  margin: 10px 0;
+  border-radius: 6px;
+  border: 1px solid rgba(0,0,0,0.06);
+}
+.table-scroll::-webkit-scrollbar {
+  height: 5px;
+}
+.table-scroll::-webkit-scrollbar-thumb {
+  background: #bbb;
+  border-radius: 3px;
+}
+.table-scroll::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 /* Markdown formatting within assistant bubbles */
@@ -304,13 +323,13 @@ main {
   color: #9ad195;
 }
 
-/* Markdown tables — allow horizontal scroll inside bubble */
+/* Markdown tables — inside .table-scroll, column widths are natural */
 .bubble.assistant table {
   border-collapse: collapse;
-  width: max-content;   /* natural column widths, never squished */
-  min-width: 100%;      /* at least fill the bubble */
-  margin: 12px 0;
-  font-size: 0.9em;
+  width: max-content;   /* natural column widths */
+  min-width: 100%;      /* at least fill the scroll container */
+  margin: 0;            /* margin handled by .table-scroll wrapper */
+  font-size: 0.88em;
 }
 
 .bubble.assistant table th,
@@ -663,9 +682,12 @@ main {
     height: calc(100dvh - 250px);
   }
 
-  /* Bubbles: use nearly full width on small screens */
-  .bubble.assistant { max-width: 98%; }
-  .bubble.user      { max-width: 88%; }
+  /* Bubbles: full-width assistant on mobile, regular user bubble */
+  .bubble.assistant {
+    max-width: 100%;
+    margin-right: 0;   /* drop auto-margin so it spans full chat width */
+  }
+  .bubble.user { max-width: 88%; }
 
   /* Account key in monospace can be long */
   .account-key { word-break: break-all; }

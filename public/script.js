@@ -325,6 +325,16 @@ function addMessage(sender, text) {
     div.innerHTML = (typeof DOMPurify !== 'undefined')
       ? DOMPurify.sanitize(rawHtml)
       : rawHtml;
+
+    // Wrap every <table> in a scrollable container so wide tables don't
+    // overflow the viewport — a div with a fixed width reliably triggers
+    // overflow-x:auto, unlike a max-width-only bubble element.
+    div.querySelectorAll('table').forEach(table => {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'table-scroll';
+      table.parentNode.insertBefore(wrapper, table);
+      wrapper.appendChild(table);
+    });
     
     // Render extracted charts
     chartBlocks.forEach(chartData => {
