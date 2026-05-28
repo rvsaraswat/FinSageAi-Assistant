@@ -5,6 +5,7 @@ body {
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   background: #f7f7f9;
   color: #222;
+  overflow-x: hidden; /* prevent any child from causing horizontal page scroll */
 }
 
 header {
@@ -38,8 +39,10 @@ main {
 }
 
 #chat {
-  height: calc(100vh - 180px);
+  height: calc(100vh - 185px);
+  height: calc(100dvh - 185px); /* dvh = excludes browser chrome bars */
   overflow-y: auto;
+  overflow-x: hidden;
   background: #ffffff;
   border: 1px solid #e9ecef;
   border-radius: 8px;
@@ -188,6 +191,8 @@ main {
   margin: 8px 0;
   line-height: 1.4;
   transition: transform 0.2s ease, opacity 0.2s ease;
+  word-break: break-word;
+  overflow-wrap: anywhere; /* break long URLs / tokens */
 }
 
 .bubble.user {
@@ -197,9 +202,10 @@ main {
 }
 
 .bubble.assistant {
-  background: #d1dae4; /* soft yellow */
+  background: #d1dae4;
   border: 1px solid #ffffff;
   margin-right: auto;
+  overflow-x: auto; /* wide tables scroll inside the bubble */
 }
 
 /* Markdown formatting within assistant bubbles */
@@ -266,6 +272,7 @@ main {
   padding: 10px;
   border-radius: 6px;
   overflow-x: auto;
+  max-width: 100%;   /* never push bubble wider */
   margin: 10px 0;
 }
 
@@ -297,12 +304,13 @@ main {
   color: #9ad195;
 }
 
-/* Markdown tables */
+/* Markdown tables — allow horizontal scroll inside bubble */
 .bubble.assistant table {
   border-collapse: collapse;
-  width: 100%;
+  width: max-content;   /* natural column widths, never squished */
+  min-width: 100%;      /* at least fill the bubble */
   margin: 12px 0;
-  font-size: 0.95em;
+  font-size: 0.9em;
 }
 
 .bubble.assistant table th,
@@ -645,6 +653,23 @@ main {
 /* ─── RESPONSIVE ────────────────────────────────────────────────────────── */
 
 @media (max-width: 600px) {
+  /* Header */
+  header h1 { font-size: 1.35em; }
+  header .tagline { font-size: 0.8em; }
+
+  /* Chat area: recalculate height for taller 3-row mobile toolbar */
+  #chat {
+    height: calc(100vh - 250px);
+    height: calc(100dvh - 250px);
+  }
+
+  /* Bubbles: use nearly full width on small screens */
+  .bubble.assistant { max-width: 98%; }
+  .bubble.user      { max-width: 88%; }
+
+  /* Account key in monospace can be long */
+  .account-key { word-break: break-all; }
+
   /* Toolbar: stack model full-width, buttons icon-only */
   .row-toolbar {
     flex-wrap: wrap;
@@ -683,7 +708,8 @@ main {
   /* Prevent iOS from zooming into the input */
   .row-input input { font-size: 16px; }
 
-  main { padding-bottom: 120px; } /* taller toolbar on mobile */
+  /* Extra bottom padding so last message clears the 3-row toolbar */
+  main { padding-bottom: 160px; }
 
   /* Modals */
   .profile-grid { grid-template-columns: 1fr; }
