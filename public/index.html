@@ -20,20 +20,37 @@
   </main>
 
   <div id="controls">
-    <div class="row">
-      <label for="modelSelect">Model:</label>
-      <select id="modelSelect">
-        <option value="">Loading models...</option>
-      </select>
-
-      <button id="kiteLoginBtn" title="Login to Zerodha Kite">🔐 Kite Login</button>      <button id="accountsBtn" title="Manage Zerodha accounts">🔑 Accounts</button>      <button id="portfolioBtn" title="Analyze your holdings">Analyze Portfolio</button>
-      <button id="tradeBtn" title="Place a trade order">Place Trade</button>
-      <button id="settingsBtn" title="AI Settings & Custom Prompts">⚙️ Settings</button>
+    <!-- Toolbar: model selector + action buttons -->
+    <div class="row row-toolbar">
+      <div class="toolbar-model">
+        <label for="modelSelect">Model</label>
+        <select id="modelSelect" aria-label="Select AI model">
+          <option value="">Loading models...</option>
+        </select>
+      </div>
+      <div class="toolbar-actions">
+        <button id="kiteLoginBtn" title="Login to Zerodha Kite" aria-label="Kite Login">
+          <span class="btn-icon">🔐</span><span class="btn-text">Kite Login</span>
+        </button>
+        <button id="accountsBtn" title="Manage Zerodha accounts" aria-label="Accounts">
+          <span class="btn-icon">🔑</span><span class="btn-text">Accounts</span>
+        </button>
+        <button id="portfolioBtn" title="Analyze your holdings" aria-label="Analyze Portfolio">
+          <span class="btn-icon">📊</span><span class="btn-text">Portfolio</span>
+        </button>
+        <button id="tradeBtn" title="Place a trade order" aria-label="Place Trade">
+          <span class="btn-icon">💹</span><span class="btn-text">Trade</span>
+        </button>
+        <button id="settingsBtn" title="AI Settings & Custom Prompts" aria-label="Settings">
+          <span class="btn-icon">⚙️</span><span class="btn-text">Settings</span>
+        </button>
+      </div>
     </div>
 
-    <div class="row">
-      <input id="userInput" placeholder="Ask me something..." />
-      <button id="sendBtn">Send</button>
+    <!-- Input row -->
+    <div class="row row-input">
+      <input id="userInput" placeholder="Ask me something..." aria-label="Message input" autocomplete="off" />
+      <button id="sendBtn" aria-label="Send message">Send</button>
     </div>
   </div>
 

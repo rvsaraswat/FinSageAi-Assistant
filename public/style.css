@@ -34,7 +34,7 @@ header .tagline {
 
 main {
   padding: 12px 16px;
-  padding-bottom: 100px; /* space for controls */
+  padding-bottom: 110px; /* space for fixed controls bar */
 }
 
 #chat {
@@ -53,35 +53,46 @@ main {
   right: 0;
   background: #fff;
   border-top: 1px solid #e9ecef;
-  padding: 10px 16px;
-  display: grid;
-  gap: 8px;
-}
-
-#controls .row {
+  padding: 8px 12px;
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 10;
+}
+
+/* ── Toolbar row ── */
+.row-toolbar {
+  display: flex;
   align-items: center;
+  gap: 8px;
+  min-height: 0;
 }
 
-#controls input {
-  flex: 1;
-  padding: 10px 12px;
-  border: 1px solid #ced4da;
-  border-radius: 6px;
+.toolbar-model {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  max-width: 240px;
 }
 
-#controls button, #controls select {
-  padding: 8px 10px;
-  border: 1px solid #ced4da;
-  border-radius: 6px;
-  background: #f8f9fa;
-  cursor: pointer;
+.toolbar-model label {
+  font-size: 0.8em;
+  color: #666;
+  white-space: nowrap;
+  font-weight: 500;
 }
 
 #modelSelect {
-  max-width: 220px;
-  font-size: 0.85em;
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  background: #f8f9fa;
+  font-size: 0.82em;
+  height: 36px;
+  cursor: pointer;
 }
 
 #modelSelect optgroup {
@@ -94,6 +105,78 @@ main {
   font-weight: 400;
   color: #222;
   padding-left: 4px;
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 2px; /* prevent clipping scroll indicator */
+}
+.toolbar-actions::-webkit-scrollbar { display: none; }
+
+.toolbar-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 12px;
+  height: 36px;
+  min-width: max-content;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  background: #f8f9fa;
+  cursor: pointer;
+  font-size: 0.85em;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s;
+  flex-shrink: 0;
+}
+.toolbar-actions button:hover  { background: #e9ecef; border-color: #adb5bd; }
+.toolbar-actions button:active { background: #dee2e6; }
+.toolbar-actions button:focus-visible {
+  outline: 2px solid #3c88fc;
+  outline-offset: 2px;
+}
+
+/* ── Input row ── */
+.row-input {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.row-input input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  font-size: 1em;
+  min-height: 44px;
+  transition: border-color 0.15s;
+}
+.row-input input:focus { outline: none; border-color: #3c88fc; }
+
+.row-input #sendBtn {
+  padding: 0 22px;
+  min-height: 44px;
+  background: #3c88fc;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s;
+}
+.row-input #sendBtn:hover  { background: #2a74e8; }
+.row-input #sendBtn:active { background: #1a64d8; }
+.row-input #sendBtn:focus-visible {
+  outline: 2px solid #3c88fc;
+  outline-offset: 2px;
 }
 
 .bubble {
@@ -559,9 +642,51 @@ main {
 
 /* ─── RESPONSIVE ────────────────────────────────────────────────────────── */
 
-@media (max-width: 520px) {
+@media (max-width: 600px) {
+  /* Toolbar: stack model full-width, buttons icon-only */
+  .row-toolbar {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .toolbar-model {
+    flex: 1 1 100%;   /* full width on its own line */
+    max-width: none;
+  }
+
+  #modelSelect {
+    flex: 1;
+    max-width: none;
+    font-size: 0.8em;
+  }
+
+  .toolbar-actions {
+    flex: 1 1 100%;   /* full width, scrollable */
+  }
+
+  /* Icon-only buttons — 44×44px touch targets */
+  .toolbar-actions button {
+    height: 44px;
+    min-width: 44px;
+    padding: 0 10px;
+    justify-content: center;
+  }
+  .btn-text { display: none; }
+
+  /* Prevent iOS from zooming into the input */
+  .row-input input { font-size: 16px; }
+
+  main { padding-bottom: 120px; } /* taller toolbar on mobile */
+
+  /* Modals */
   .profile-grid { grid-template-columns: 1fr; }
-  .modal { max-height: 95vh; }
+  .modal { max-height: 95vh; border-radius: 12px 12px 0 0; }
+  .modal-overlay { align-items: flex-end; padding: 0; }
   .account-item { flex-direction: column; }
   .account-actions { width: 100%; justify-content: flex-end; }
+  .account-actions .btn-sm { min-height: 40px; padding: 8px 14px; }
+}
+
+@media (min-width: 601px) {
+  .btn-text { display: inline; }
 }
