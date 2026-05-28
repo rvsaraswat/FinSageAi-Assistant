@@ -58,6 +58,7 @@ main {
   flex-direction: column;
   gap: 6px;
   z-index: 10;
+  overflow: hidden; /* prevent children from causing horizontal scroll */
 }
 
 /* ── Toolbar row ── */
@@ -66,6 +67,7 @@ main {
   align-items: center;
   gap: 8px;
   min-height: 0;
+  min-width: 0;
 }
 
 .toolbar-model {
@@ -651,12 +653,17 @@ main {
 
   .toolbar-model {
     flex: 1 1 100%;   /* full width on its own line */
-    max-width: none;
+    max-width: 100%;  /* never exceed parent */
+    min-width: 0;
+    width: 0;         /* flex-basis trick: forces proper shrink */
+    overflow: hidden;
   }
 
   #modelSelect {
     flex: 1;
-    max-width: none;
+    min-width: 0;
+    max-width: 100%;
+    width: 0;         /* flex-basis trick: shrinks within label+gap */
     font-size: 0.8em;
   }
 
